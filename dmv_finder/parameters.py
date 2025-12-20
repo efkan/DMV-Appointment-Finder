@@ -119,50 +119,55 @@ def update_parameters(zip_checked: Optional[str] = None, new_date: Optional[str]
     
     PARAMETERS_FILE.write_text(content)
 
-def reset_zip_codes() -> None:
+def recycle_zip_codes() -> None:
     """
-    Reset zip codes: Move 'Zip Codes Checked' back to 'Zip Codes'.
+    Move all 'Zip Codes Checked' back to 'Zip Codes' and clear Checked list.
     """
     if not PARAMETERS_FILE.exists():
         return
         
     content = PARAMETERS_FILE.read_text()
     
-    # Check if there are checked zips
+    # Extract checked zip codes
     checked_match = re.search(r"Zip Codes Checked:\s*(.+)", content)
     if not checked_match or not checked_match.group(1).strip():
-        return # Nothing to reset
+        # Nothing to recycle
+        return
         
     checked_zips_str = checked_match.group(1).strip()
     
-    # Read current active zips (if any remain)
-    active_zips_str = ""
-    active_match = re.search(r"Zip Codes:\s*(?!Checked)(.*)", content)
-    if active_match and active_match.group(1).strip():
-        active_zips_str = active_match.group(1).strip()
-    
-    # Combine active + checked (checked go to end or simply merge)
-    # Strategy: Just append checked to whatever is active
-    if active_zips_str:
-        new_active = f"{active_zips_str}, {checked_zips_str}"
-    else:
-        new_active = checked_zips_str
-        
-    # Update content
-    # 1. Clear Checked
+    # 1. Clear Zip Codes Checked
     content = re.sub(
         r"Zip Codes Checked:.*",
         "Zip Codes Checked: ",
         content
     )
     
-    # 2. Update Active
-    content = re.sub(
-        r"Zip Codes:\s*(?!Checked).*",
-        f"Zip Codes: {new_active}",
-        content
-    )
+    # 2. Append to Zip Codes
+    # Find existing Zip Codes line
+    zips_match = re.search(r"(Zip Codes:\s*(?!Checked))(.+)", content)
     
+    if zips_match:
+        current_zips = zips_match.group(2).strip()
+        if current_zips:
+            new_zips = f"{current_zips}, {checked_zips_str}"
+        else:
+            new_zips = checked_zips_str
+            
+        content = re.sub(
+            r"Zip Codes:\s*(?!Checked).*",
+            f"Zip Codes: {new_zips}",
+            content
+        )
+    else:
+        # If Zip Codes line is empty or missing (edge case), just set it
+        # This regex replacement handles the line if it exists but is empty
+        content = re.sub(
+            r"Zip Codes:\s*(?!Checked).*",
+            f"Zip Codes: {checked_zips_str}",
+            content
+        )
+
     PARAMETERS_FILE.write_text(content)
 
 def get_parameters() -> Dict:

@@ -13,7 +13,7 @@ import sys
 from datetime import datetime
 from dmv_finder.config import DMV_URL
 from dmv_finder.core import create_driver, random_delay
-from dmv_finder.parameters import read_parameters, update_parameters, get_parameters, reset_zip_codes
+from dmv_finder.parameters import read_parameters, update_parameters, get_parameters, recycle_zip_codes
 from dmv_finder.actions import (
     perform_login, 
     verify_office_page, 
@@ -28,18 +28,14 @@ from dmv_finder.notify import send_ntfy_notification
 def compare_date(found_date: str, params: dict) -> bool:
     """Compare found date with stored earliest."""
     try:
-        if params["earliest_date"]:
-            current_earliest_str = params["earliest_date"]
-            # Debug log for visibility
-            print(f"DEBUG: Comparing found date '{found_date}' with current earliest '{current_earliest_str}'")
-            
-            found_dt = datetime.strptime(found_date, "%m/%d/%Y")
-            current_earliest = datetime.strptime(current_earliest_str, "%m/%d/%Y")
-        else:
-            print(f"DEBUG: No current earliest date. Setting found date '{found_date}' as earliest.")
-            current_earliest = datetime.max
-            found_dt = datetime.strptime(found_date, "%m/%d/%Y") # Parse to validate format
+        found_dt = datetime.strptime(found_date, "%m/%d/%Y")
         
+        if params["earliest_date"]:
+            current_earliest = datetime.strptime(params["earliest_date"], "%m/%d/%Y")
+        else:
+            current_earliest = datetime.max
+        
+        print(f"  🔍 DEBUG: Comparing found {found_date} vs earliest {params['earliest_date']}")
         return found_dt < current_earliest
     except Exception as e:
         print(f"❌ Date comparison failed: {e}")
@@ -62,20 +58,16 @@ def main():
     if not params["dob"]:
         print("❌ STOP: Date of Birth is missing in parameters.md!")
         return
-    
-    # Check if we have zip codes. If not, try reset immediately if checked exists.
     if not params["zip_codes"]:
-        if params["zip_codes_checked"]:
-            print("ℹ Zip Codes list empty, but Checked list has items. Resetting cycle...")
-            reset_zip_codes()
-            # Reload params
-            params = read_parameters()
-            if not params["zip_codes"]:
-                 print("❌ STOP: No Zip Codes found even after reset!")
-                 return
-        else:
-            print("❌ STOP: No Zip Codes found in parameters.md!")
-            return
+        print("❌ STOP: No Zip Codes found in parameters.md (or all checked)!")
+        
+        # If all zips are checked, maybe user wants to reset? 
+        # But per instructions we just stop if no zips.
+        # User said "remove it after the zip code is written to Zip Codes Checked".
+        # So eventually this list will be empty.
+        # Check if we should notify user they are all done.
+        print("ℹ No zip codes to check based on parameters.md.")
+        return
     
     print(f"📋 Parameters loaded:")
     print(f"   Permit: {params['permit_number']}")
@@ -155,9 +147,9 @@ def main():
         # Epic-6: Send notification if better date found
         if better_date_found and best_date and best_zip:
             send_ntfy_notification(best_zip, best_date)
-            
+        
         print("\n" + "=" * 60)
-        print("🏁 DMV Appointment Finder - Run Complete!")
+        print("🏁 DMV Appointment Finder - Complete!")
         print("=" * 60)
         
         # Final summary
@@ -165,14 +157,13 @@ def main():
         print(f"\n📊 Final Results:")
         print(f"   Earliest Date: {final_params['earliest_date']}")
         print(f"   Earliest Zip: {final_params['earliest_zip']}")
-        print(f"   Remaining Zips in active list: {final_params['zip_codes']}")
+        print(f"   Remaining Zips: {final_params['zip_codes']}")
         
-        # Logic Enhancement: Reset zip codes if active list is empty
-        if not final_params["zip_codes"] and final_params["zip_codes_checked"]:
-            print("\n🔄 Cycle complete! Resetting zip codes for next run...")
-            reset_zip_codes()
-            print("   ✓ Reset complete. All checked codes moved back to active list.")
-        
+        # Recycle checked zip codes
+        print("\n♻️ Recycling checked zip codes...")
+        recycle_zip_codes()
+        print("✅ Zip codes recycled.")
+
     finally:
         random_delay(2, 3)
         driver.quit()
