@@ -176,7 +176,8 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
                     
                     date_span = segment.find_elements(By.CSS_SELECTOR, "span.rbc-event-day-num--mobile")
                     if date_span:
-                        date_text = date_span[0].text.strip() # e.g. "January 7, 2026"
+                        # Use textContent because the element might be hidden on desktop view (Selenium .text returns empty for hidden nodes)
+                        date_text = date_span[0].get_attribute("textContent").strip() # e.g. "January 7, 2026"
                         print(f"  → Date text found: '{date_text}'")
                         
                         # Convert to MM/DD/YYYY
