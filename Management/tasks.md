@@ -29,8 +29,8 @@
 | E6-01 | Implement back/reset functionality | ✅ Done | Neo | 0 |
 | E6-02 | Loop through all zip codes | ✅ Done | Neo | 0 |
 | E6-03 | NTFY.sh notification integration | ✅ Done | Neo | 0 |
-| E7-01 | End-to-end test run | 🔄 In Progress | Bugsy | 0 |
-| E7-02 | Document QA results | ⏳ Pending | Bugsy | 0 |
+| E7-01 | End-to-end test run | ✅ Done | Bugsy | 1 |
+| E7-02 | Document QA results | ✅ Done | Bugsy | 0 |
 
 ---
 

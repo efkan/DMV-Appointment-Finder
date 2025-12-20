@@ -15,6 +15,7 @@ import re
 import requests
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -307,7 +308,7 @@ def select_first_office(driver: webdriver.Chrome) -> bool:
 # EPIC-5: DATE COMPARISON LOGIC
 # ============================================================================
 
-def parse_calendar_date(driver: webdriver.Chrome) -> str | None:
+def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
     """Read the calendar and find the earliest available date."""
     print("📅 Reading calendar...")
     
