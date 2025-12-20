@@ -19,36 +19,36 @@ def read_parameters() -> Dict:
     content = PARAMETERS_FILE.read_text()
     
     # Parse zip codes: Match "Zip Codes:" but exclude "Zip Codes Checked:" line
-    # (?!Checked) ensures we don't match the checked line
-    zip_match = re.search(r"Zip Codes:\s*(?!Checked)(.+)", content)
+    # [ \t]* ensures we don't match newlines
+    zip_match = re.search(r"Zip Codes:[ \t]*(?!Checked)(.+)", content)
     if zip_match:
         zips_str = zip_match.group(1).strip()
         if zips_str:
             params["zip_codes"] = [z.strip() for z in zips_str.split(",") if z.strip()]
     
     # Parse checked zip codes
-    checked_match = re.search(r"Zip Codes Checked:\s*(.*)", content)
+    checked_match = re.search(r"Zip Codes Checked:[ \t]*(.*)", content)
     if checked_match:
         checked_str = checked_match.group(1).strip()
         if checked_str:
             params["zip_codes_checked"] = [z.strip() for z in checked_str.split(",") if z.strip()]
     
     # Parse permit number
-    permit_match = re.search(r"Permit Number:\s*(\S+)", content)
+    permit_match = re.search(r"Permit Number:[ \t]*(\S+)", content)
     if permit_match:
         params["permit_number"] = permit_match.group(1).strip()
     
     # Parse DOB
-    dob_match = re.search(r"Date of Birth:\s*(\S+)", content)
+    dob_match = re.search(r"Date of Birth:[ \t]*(\S+)", content)
     if dob_match:
         params["dob"] = dob_match.group(1).strip()
     
-    # Parse earliest availability (allowing for spaces or other chars)
-    earliest_zip_match = re.search(r"Found Earliest Availability Zip Code:\s*(.*)", content)
+    # Parse earliest availability
+    earliest_zip_match = re.search(r"Found Earliest Availability Zip Code:[ \t]*(.*)", content)
     if earliest_zip_match:
         params["earliest_zip"] = earliest_zip_match.group(1).strip()
     
-    earliest_date_match = re.search(r"Found Earliest Availability Date:\s*(.*)", content)
+    earliest_date_match = re.search(r"Found Earliest Availability Date:[ \t]*(.*)", content)
     if earliest_date_match:
         params["earliest_date"] = earliest_date_match.group(1).strip()
     
@@ -75,7 +75,6 @@ def update_parameters(zip_checked: Optional[str] = None, new_date: Optional[str]
             else:
                 new_checked = zip_checked
             
-            # Using .* to match rest of line regardless of bullet preference
             content = re.sub(
                 r"Zip Codes Checked:.*",
                 f"Zip Codes Checked: {new_checked}",
@@ -84,11 +83,8 @@ def update_parameters(zip_checked: Optional[str] = None, new_date: Optional[str]
         
         # 2. Remove from Zip Codes
         # Match 'Zip Codes:' avoiding 'Checked'
-        zips_match = re.search(r"(Zip Codes:\s*(?!Checked))(.+)", content)
+        zips_match = re.search(r"(Zip Codes:[ \t]*(?!Checked))(.+)", content)
         if zips_match:
-            prefix = zips_match.group(1) # e.g. "Zip Codes: " or "- Zip Codes: " if matched safely?
-            # Re-read careful regex: group 1 involves the lookahead, might be tricky.
-            # Simpler to parse the values.
             current_zips_str = zips_match.group(2).strip()
             if current_zips_str:
                 zips_list = [z.strip() for z in current_zips_str.split(",") if z.strip()]
@@ -96,9 +92,8 @@ def update_parameters(zip_checked: Optional[str] = None, new_date: Optional[str]
                     zips_list.remove(zip_checked)
                     new_zips_str = ", ".join(zips_list)
                     
-                    # Replace the line. We use the same lookahead logic
                     content = re.sub(
-                        r"Zip Codes:\s*(?!Checked).*",
+                        r"Zip Codes:[ \t]*(?!Checked).*",
                         f"Zip Codes: {new_zips_str}",
                         content
                     )
@@ -129,12 +124,13 @@ def recycle_zip_codes() -> None:
     content = PARAMETERS_FILE.read_text()
     
     # Extract checked zip codes
-    checked_match = re.search(r"Zip Codes Checked:\s*(.+)", content)
+    checked_match = re.search(r"Zip Codes Checked:[ \t]*(.+)", content)
     if not checked_match or not checked_match.group(1).strip():
-        # Nothing to recycle
         return
         
     checked_zips_str = checked_match.group(1).strip()
+    if not checked_zips_str:
+        return
     
     # 1. Clear Zip Codes Checked
     content = re.sub(
@@ -145,7 +141,7 @@ def recycle_zip_codes() -> None:
     
     # 2. Append to Zip Codes
     # Find existing Zip Codes line
-    zips_match = re.search(r"(Zip Codes:\s*(?!Checked))(.+)", content)
+    zips_match = re.search(r"(Zip Codes:[ \t]*(?!Checked))(.+)", content)
     
     if zips_match:
         current_zips = zips_match.group(2).strip()
@@ -155,15 +151,14 @@ def recycle_zip_codes() -> None:
             new_zips = checked_zips_str
             
         content = re.sub(
-            r"Zip Codes:\s*(?!Checked).*",
+            r"Zip Codes:[ \t]*(?!Checked).*",
             f"Zip Codes: {new_zips}",
             content
         )
     else:
-        # If Zip Codes line is empty or missing (edge case), just set it
-        # This regex replacement handles the line if it exists but is empty
+        # If empty
         content = re.sub(
-            r"Zip Codes:\s*(?!Checked).*",
+            r"Zip Codes:[ \t]*(?!Checked).*",
             f"Zip Codes: {checked_zips_str}",
             content
         )
