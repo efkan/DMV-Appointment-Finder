@@ -42,4 +42,6 @@
 | E8-01 | Remove used zip codes from parameters.md | ✅ Done | Neo | 0 |
 | E8-02 | Fix date/zip update logic & regex | ✅ Done | Neo | 0 |
 | E9-01 | Refactor: Split dmv_finder.py into modules | ✅ Done | Neo | 0 |
+| E10-01 | Implement Zip Code Reset logic (Checked -> Active) | ✅ Done | Neo | 0 |
+| E10-02 | Add visibility into Date Comparison format | ✅ Done | Neo | 0 |
 
