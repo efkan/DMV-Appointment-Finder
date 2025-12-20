@@ -140,60 +140,64 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
     print("📅 Reading calendar...")
     
     try:
-        wait = WebDriverWait(driver, 5) # Short wait as we might not always find slots
+        wait = WebDriverWait(driver, 5) # Short wait
         
-        # Base container for date rows
-        # The user specified: #appointments__date-cal > div > div > div.rbc-month-view > div:nth-child(2) > div.rbc-row-content > div
-        # We'll use a slightly more generic css to find all row segments in the calendar grid
-        # because "div:nth-child(2)" might only select one specific week/row.
-        # We want to scan the whole month view.
-        
-        # Finding all row segments that might contain events
-        # "div.rbc-row-segment" is the container for a day cell implementation in this grid
+        # 1. Wait for at least one segment to appear to ensure calendar is loaded
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rbc-row-segment")))
+        except TimeoutException:
+            print("  ⚠ No calendar rows found (timeout).")
+            return None
+
+        # 2. Find all row segments
         row_segments = driver.find_elements(By.CSS_SELECTOR, ".rbc-row-segment")
+        print(f"  → Found {len(row_segments)} calendar segments. Checking each...")
         
-        for segment in row_segments:
+        for i, segment in enumerate(row_segments):
             try:
                 # Check for "Open Times" availability
                 # We look for a child span with class "rbc-event-available"
                 open_times_span = segment.find_elements(By.CSS_SELECTOR, "span.rbc-event-available")
                 
-                if open_times_span and open_times_span[0].text.strip() == "Open Times":
-                    print("  ✨ Found 'Open Times' slot!")
+                # Check text content robustly (handle hidden or whitespace)
+                if open_times_span:
+                    text_content = open_times_span[0].get_attribute("textContent").strip()
+                    # print(f"    Segment {i}: Found status '{text_content}'") # verbose debug
                     
-                    # DEBUG: Log the HTML parsing context
-                    try:
-                        html_content = segment.get_attribute('outerHTML')
-                        print(f"  🔍 HTML Context: {html_content}")
-                    except Exception as html_e:
-                        print(f"  ⚠ Could not log HTML: {html_e}")
-                    
-                    # Found a slot! Now find the date.
-                    # The user said the date is in a sibling span with class "rbc-event-day-num--mobile"
-                    # However, siblings in Selenium often require xpath or finding parent then child.
-                    # Assuming they are siblings within the same parent `segment`? 
-                    # If they are siblings, we can find them relative to the segment.
-                    
-                    date_span = segment.find_elements(By.CSS_SELECTOR, "span.rbc-event-day-num--mobile")
-                    if date_span:
-                        # Use textContent because the element might be hidden on desktop view (Selenium .text returns empty for hidden nodes)
-                        date_text = date_span[0].get_attribute("textContent").strip() # e.g. "January 7, 2026"
-                        print(f"  → Date text found: '{date_text}'")
+                    if text_content == "Open Times":
+                        print(f"  ✨ Found 'Open Times' slot at segment {i}!")
                         
-                        # Convert to MM/DD/YYYY
+                        # DEBUG: Log the HTML parsing context
                         try:
-                            date_obj = datetime.strptime(date_text, "%B %d, %Y")
-                            formatted_date = date_obj.strftime("%m/%d/%Y")
-                            print(f"  → Parsed date: {formatted_date}")
-                            return formatted_date
-                        except ValueError as ve:
-                            print(f"  ❌ Date parsing error for '{date_text}': {ve}")
+                            html_content = segment.get_attribute('outerHTML')
+                            print(f"  🔍 HTML Context: {html_content}")
+                        except Exception:
+                            pass
+                        
+                        # Found a slot! Now find the date.
+                        date_span = segment.find_elements(By.CSS_SELECTOR, "span.rbc-event-day-num--mobile")
+                        if date_span:
+                            # Use textContent because the element might be hidden on desktop view
+                            date_text = date_span[0].get_attribute("textContent").strip()
+                            print(f"  → Date text found: '{date_text}'")
+                            
+                            # Convert to MM/DD/YYYY
+                            try:
+                                date_obj = datetime.strptime(date_text, "%B %d, %Y")
+                                formatted_date = date_obj.strftime("%m/%d/%Y")
+                                print(f"  → Parsed date: {formatted_date}")
+                                return formatted_date
+                            except ValueError as ve:
+                                print(f"  ❌ Date parsing error for '{date_text}': {ve}")
+                                # CONTINUE searching! Do not return None.
+                        else:
+                            print("  ⚠ 'Open Times' found but NO date span sibling?")
             
             except Exception as inner_e:
-                # Continue searching other segments even if one fails
+                print(f"  ⚠ Error checking segment {i}: {inner_e}")
                 continue
         
-        print("  ⚠ No 'Open Times' found on current calendar view")
+        print("  ⚠ No valid 'Open Times' slots found after checking all segments.")
         return None
             
     except Exception as e:
