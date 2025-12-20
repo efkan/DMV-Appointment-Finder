@@ -161,6 +161,13 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
                 if open_times_span and open_times_span[0].text.strip() == "Open Times":
                     print("  ✨ Found 'Open Times' slot!")
                     
+                    # DEBUG: Log the HTML parsing context
+                    try:
+                        html_content = segment.get_attribute('outerHTML')
+                        print(f"  🔍 HTML Context: {html_content}")
+                    except Exception as html_e:
+                        print(f"  ⚠ Could not log HTML: {html_e}")
+                    
                     # Found a slot! Now find the date.
                     # The user said the date is in a sibling span with class "rbc-event-day-num--mobile"
                     # However, siblings in Selenium often require xpath or finding parent then child.

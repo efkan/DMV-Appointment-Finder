@@ -1,6 +1,6 @@
 ### DMV Appointment Finder Parameters
 
-- Zip Codes: 94568, 95304, 94401, 94565, 94544 
+- Zip Codes: 94568
 - Zip Codes Checked: 
 
 - Driver's License or Permit Number: U1215076

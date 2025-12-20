@@ -52,5 +52,6 @@
 | E10-02 | Integrate recycle logic into main.py cleanup | ✅ Done | Neo | 0 |
 | E11-01 | Implement specific selector calendar parsing | ✅ Done | Neo | 0 |
 | E11-02 | Add debug visibility for date comparison | ✅ Done | Neo | 0 |
+| E11-03 | specific selector calendar parsing - add debug logging | ⏳ Pending | Neo | 0 |
 
 
