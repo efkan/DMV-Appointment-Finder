@@ -32,7 +32,14 @@
 | E7-01 | End-to-end test run | ✅ Done | Bugsy | 1 |
 | E7-02 | Document QA results | ✅ Done | Bugsy | 0 |
 
+
 ---
 
-## 📜 5-Retry Failsafe Rule
-> If any task reaches **Retry Count = 5**, STOP all work and alert the User immediately.
+## 🛠 Refactoring & Fixes (Epics 8-10)
+
+| ID | Task | Status | Assigned | Retry Count |
+|----|------|--------|----------|-------------|
+| E8-01 | Remove used zip codes from parameters.md | ✅ Done | Neo | 0 |
+| E8-02 | Fix date/zip update logic & regex | ✅ Done | Neo | 0 |
+| E9-01 | Refactor: Split dmv_finder.py into modules | ✅ Done | Neo | 0 |
+
