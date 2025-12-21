@@ -164,8 +164,8 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
                     text_content = open_times_span[0].get_attribute("textContent").strip()
                     # print(f"    Segment {i}: Found status '{text_content}'") # verbose debug
                     
-                    if text_content == "Open Times":
-                        print(f"  ✨ Found 'Open Times' slot at segment {i}!")
+                    if text_content in ["Open Times", "Nearby Office Times"]:
+                        print(f"  ✨ Found '{text_content}' slot at segment {i}!")
                         
                         # DEBUG: Log the HTML parsing context
                         try:
