@@ -1,11 +1,11 @@
 import requests
 from .config import NTFY_URL
 
-def send_ntfy_notification(zip_code: str, date: str) -> None:
+def send_ntfy_notification(date: str, zip_code: str) -> None:
     """Send notification via NTFY.sh."""
     print("📢 Sending NTFY notification...")
     
-    message = f"🎉 A new DMV availability has been found!\n\nZip Code: {zip_code}\nDate: {date}"
+    message = f"Found an earlier DMV available date: {date}, Zip Code: {zip_code}"
     
     try:
         response = requests.post(

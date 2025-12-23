@@ -8,7 +8,7 @@ PARAMETERS_FILE = BASE_DIR / "Management" / "parameters.md"
 DMV_URL = "https://www.dmv.ca.gov/portal/appointments/select-appointment-type"
 
 # NTFY
-NTFY_TOPIC = "dmv-appointment-finder"
+NTFY_TOPIC = "pinars_dmv_aptpointments"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 # Selectors

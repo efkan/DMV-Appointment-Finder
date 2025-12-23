@@ -12,7 +12,7 @@ Team:
 import sys
 from datetime import datetime
 from dmv_finder.config import DMV_URL
-from dmv_finder.core import create_driver, random_delay
+from dmv_finder.core import create_driver, random_delay, check_for_captcha
 from dmv_finder.parameters import read_parameters, update_parameters, get_parameters, recycle_zip_codes
 from dmv_finder.actions import (
     perform_login, 
@@ -99,11 +99,21 @@ def main():
             print("❌ ALERT: Office verification failed! Stopping.")
             return
         
+        # Check for CAPTCHA after login
+        if check_for_captcha(driver):
+            print("❌ ALERT: CAPTCHA detected after login! Cannot continue.")
+            return
+        
         # Process each zip code
         for i, zip_code in enumerate(zip_codes_to_process):
             print(f"\n{'='*60}")
             print(f"📍 Processing zip code {i+1}/{len(zip_codes_to_process)}: {zip_code}")
             print("=" * 60)
+            
+            # Check for CAPTCHA before each zip code search
+            if check_for_captcha(driver):
+                print("❌ ALERT: CAPTCHA detected! Stopping to avoid detection.")
+                return
             
             # Epic-3: Search for office
             if not search_office(driver, zip_code):
@@ -146,7 +156,7 @@ def main():
         
         # Epic-6: Send notification if better date found
         if better_date_found and best_date and best_zip:
-            send_ntfy_notification(best_zip, best_date)
+            send_ntfy_notification(best_date, best_zip)
         
         print("\n" + "=" * 60)
         print("🏁 DMV Appointment Finder - Complete!")

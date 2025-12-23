@@ -21,9 +21,10 @@ def create_driver() -> webdriver.Chrome:
     
     return driver
 
-def random_delay(min_sec: float = 2.0, max_sec: float = 5.0) -> None:
-    """Sleep for a random duration to mimic human behavior."""
+def random_delay(min_sec: float = 8.0, max_sec: float = 15.0) -> None:
+    """Sleep for a random duration to mimic human behavior and avoid reCAPTCHA."""
     delay = random.uniform(min_sec, max_sec)
+    print(f"  ⏳ Waiting {delay:.1f}s...")
     time.sleep(delay)
 
 def human_type(element, text: str) -> None:
@@ -31,3 +32,24 @@ def human_type(element, text: str) -> None:
     for char in text:
         element.send_keys(char)
         time.sleep(random.uniform(0.05, 0.15))
+
+def check_for_captcha(driver) -> bool:
+    """
+    Check if a Google reCAPTCHA is present on the page.
+    Returns True if CAPTCHA detected, False otherwise.
+    """
+    captcha_indicators = [
+        "g-recaptcha",
+        "recaptcha-checkbox",
+        "rc-anchor-container",
+        "recaptcha-token",
+    ]
+    
+    page_source = driver.page_source.lower()
+    
+    for indicator in captcha_indicators:
+        if indicator.lower() in page_source:
+            print("🛑 CAPTCHA DETECTED! Stopping execution.")
+            return True
+    
+    return False
