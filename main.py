@@ -179,7 +179,7 @@ def main():
     
     driver = create_driver()
     cycle_count = 0
-    wait_minutes = 10
+    wait_minutes = 3
     
     try:
         while True:
