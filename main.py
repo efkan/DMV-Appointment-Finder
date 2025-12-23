@@ -12,7 +12,7 @@ Team:
 import sys
 from datetime import datetime
 from dmv_finder.config import DMV_URL
-from dmv_finder.core import create_driver, random_delay, check_for_captcha
+from dmv_finder.core import create_driver, random_delay, check_for_captcha, handle_captcha_and_retry
 from dmv_finder.parameters import read_parameters, update_parameters, get_parameters, recycle_zip_codes
 from dmv_finder.actions import (
     perform_login, 
@@ -99,9 +99,9 @@ def main():
             print("❌ ALERT: Office verification failed! Stopping.")
             return
         
-        # Check for CAPTCHA after login
-        if check_for_captcha(driver):
-            print("❌ ALERT: CAPTCHA detected after login! Cannot continue.")
+        # Check for CAPTCHA after login (wait and retry if needed)
+        if handle_captcha_and_retry(driver, DMV_URL):
+            print("❌ ALERT: CAPTCHA still blocking after retry! Manual intervention needed.")
             return
         
         # Process each zip code
@@ -110,10 +110,10 @@ def main():
             print(f"📍 Processing zip code {i+1}/{len(zip_codes_to_process)}: {zip_code}")
             print("=" * 60)
             
-            # Check for CAPTCHA before each zip code search
-            if check_for_captcha(driver):
-                print("❌ ALERT: CAPTCHA detected! Stopping to avoid detection.")
-                return
+            # Check for CAPTCHA before each zip code search (wait and retry if needed)
+            if handle_captcha_and_retry(driver, driver.current_url):
+                print("❌ ALERT: CAPTCHA still blocking! Skipping this iteration.")
+                continue  # Try next zip code
             
             # Epic-3: Search for office
             if not search_office(driver, zip_code):
