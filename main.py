@@ -42,10 +42,10 @@ def compare_date(found_date: str, params: dict) -> bool:
         return False
 
 
-def main():
-    """Main execution flow."""
+def run_cycle(driver):
+    """Run one cycle of checking all zip codes."""
     print("=" * 60)
-    print("🚗 DMV Appointment Finder - Starting...")
+    print("🚗 DMV Appointment Finder - Starting Cycle...")
     print("=" * 60)
     
     # Read parameters
@@ -54,20 +54,13 @@ def main():
     # Validate required parameters
     if not params["permit_number"]:
         print("❌ STOP: Permit Number is missing in parameters.md!")
-        return
+        return False
     if not params["dob"]:
         print("❌ STOP: Date of Birth is missing in parameters.md!")
-        return
+        return False
     if not params["zip_codes"]:
-        print("❌ STOP: No Zip Codes found in parameters.md (or all checked)!")
-        
-        # If all zips are checked, maybe user wants to reset? 
-        # But per instructions we just stop if no zips.
-        # User said "remove it after the zip code is written to Zip Codes Checked".
-        # So eventually this list will be empty.
-        # Check if we should notify user they are all done.
-        print("ℹ No zip codes to check based on parameters.md.")
-        return
+        print("ℹ No zip codes to check. Recycling will happen at end of cycle.")
+        # Don't return, let recycle happen
     
     print(f"📋 Parameters loaded:")
     print(f"   Permit: {params['permit_number']}")
@@ -75,15 +68,16 @@ def main():
     print(f"   Zip Codes: {params['zip_codes']}")
     print(f"   Current Earliest: {params['earliest_date']} ({params['earliest_zip']})")
     
-    # We iterate over a COPY of zip_codes because we might modify the file during iteration,
-    # but `params` object is static here.
-    # Note: `update_parameters` modifies the FILE, not the `params` dict in memory.
     zip_codes_to_process = list(params["zip_codes"])
+    
+    if not zip_codes_to_process:
+        print("⚠ No zip codes to process in this cycle.")
+        recycle_zip_codes()
+        print("✅ Zip codes recycled for next cycle.")
+        return True
 
     print(f"\n🎯 Will check {len(zip_codes_to_process)} zip codes: {zip_codes_to_process}")
     
-    # Create browser
-    driver = create_driver()
     better_date_found = False
     best_date = None
     best_zip = None
@@ -91,18 +85,18 @@ def main():
     try:
         # Epic-2: Login
         if not perform_login(driver, params):
-            print("❌ ALERT: Login failed! Stopping.")
-            return
+            print("❌ ALERT: Login failed! Will retry next cycle.")
+            return False
         
         # Epic-3: Verify office page
         if not verify_office_page(driver):
-            print("❌ ALERT: Office verification failed! Stopping.")
-            return
+            print("❌ ALERT: Office verification failed! Will retry next cycle.")
+            return False
         
         # Check for CAPTCHA after login (wait and retry if needed)
         if handle_captcha_and_retry(driver, DMV_URL):
-            print("❌ ALERT: CAPTCHA still blocking after retry! Manual intervention needed.")
-            return
+            print("❌ ALERT: CAPTCHA still blocking after retry! Will retry next cycle.")
+            return False
         
         # Process each zip code
         for i, zip_code in enumerate(zip_codes_to_process):
@@ -120,7 +114,6 @@ def main():
                 continue
             
             # Update parameters - mark zip as checked (and remove from list)
-            # This is done immediately after successful search per requirements
             update_parameters(zip_checked=zip_code)
             print(f"  ✓ Zip code {zip_code} marked as checked & removed from list")
             
@@ -131,8 +124,6 @@ def main():
             # Epic-5: Read and compare dates
             found_date = parse_calendar_date(driver)
             if found_date:
-                # Reload params to get latest earliest date (in case it changed or if logic needs it)
-                # But we can just use the latest memory
                 current_params = get_parameters()
                 
                 if compare_date(found_date, current_params):
@@ -159,12 +150,12 @@ def main():
             send_ntfy_notification(best_date, best_zip)
         
         print("\n" + "=" * 60)
-        print("🏁 DMV Appointment Finder - Complete!")
+        print("🏁 DMV Appointment Finder - Cycle Complete!")
         print("=" * 60)
         
         # Final summary
         final_params = read_parameters()
-        print(f"\n📊 Final Results:")
+        print(f"\n📊 Cycle Results:")
         print(f"   Earliest Date: {final_params['earliest_date']}")
         print(f"   Earliest Zip: {final_params['earliest_zip']}")
         print(f"   Remaining Zips: {final_params['zip_codes']}")
@@ -173,7 +164,46 @@ def main():
         print("\n♻️ Recycling checked zip codes...")
         recycle_zip_codes()
         print("✅ Zip codes recycled.")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Cycle error: {e}")
+        return False
 
+
+def main():
+    """Main execution flow - runs continuously."""
+    print("🔄 Starting DMV Appointment Finder in CONTINUOUS MODE")
+    print("   Press Ctrl+C to stop.\n")
+    
+    driver = create_driver()
+    cycle_count = 0
+    wait_minutes = 10
+    
+    try:
+        while True:
+            cycle_count += 1
+            print(f"\n{'#'*60}")
+            print(f"# CYCLE {cycle_count}")
+            print(f"{'#'*60}\n")
+            
+            success = run_cycle(driver)
+            
+            if not success:
+                print("⚠ Cycle had issues. Will retry after wait.")
+            
+            print(f"\n⏳ Waiting {wait_minutes} minutes before next cycle...")
+            import time
+            time.sleep(wait_minutes * 60)
+            
+            # Navigate back to start for next cycle
+            print("🔄 Reloading for next cycle...")
+            driver.get(DMV_URL)
+            random_delay(3, 5)
+            
+    except KeyboardInterrupt:
+        print("\n\n🛑 Stopped by user (Ctrl+C)")
     finally:
         random_delay(2, 3)
         driver.quit()
@@ -182,3 +212,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
