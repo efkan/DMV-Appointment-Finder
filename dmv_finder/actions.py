@@ -211,12 +211,23 @@ def click_back_reset(driver: webdriver.Chrome) -> bool:
     
     try:
         wait = WebDriverWait(driver, 10)
-        back_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, SELECTORS["back_btn"])))
-        back_btn.click()
+        # Try to find the button
+        back_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, SELECTORS["back_btn"])))
+        
+        # In headless, complex interactions (hover, scroll) sometimes crash chrome on specific sites.
+        # We will try a robust JS click directly.
+        try:
+            driver.execute_script("arguments[0].click();", back_btn)
+        except Exception:
+            # Fallback: try standard click
+             back_btn.click()
+            
         random_delay(2, 4)
         print("✅ Returned to office search!")
         return True
         
     except Exception as e:
         print(f"❌ Back/reset failed: {e}")
+        # Don't return False immediately if we suspect the driver crashed, let the exception bubble up later
+        # But here we just log.
         return False

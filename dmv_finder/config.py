@@ -11,6 +11,9 @@ DMV_URL = "https://www.dmv.ca.gov/portal/appointments/select-appointment-type"
 NTFY_TOPIC = "pinars_dmv_appointments"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
+# Browser Config
+HEADLESS_MODE = True  # Set to True to run without a visible browser window
+
 # Selectors
 SELECTORS = {
     "appointment_type": "#appointment-type-selector > div > div:nth-child(2) > div > fieldset > ul > li:nth-child(1) > label > span:nth-child(1)",

@@ -169,6 +169,9 @@ def run_cycle(driver):
         
     except Exception as e:
         print(f"❌ Cycle error: {e}")
+        # Re-raise critical driver errors so main() can handle recreation
+        if "invalid session id" in str(e).lower() or "disconnected" in str(e).lower() or "session deleted" in str(e).lower():
+            raise e
         return False
 
 
@@ -179,7 +182,7 @@ def main():
     
     driver = create_driver()
     cycle_count = 0
-    wait_minutes = 3
+    wait_minutes = 4
     
     try:
         while True:
@@ -188,19 +191,46 @@ def main():
             print(f"# CYCLE {cycle_count}")
             print(f"{'#'*60}\n")
             
-            success = run_cycle(driver)
+            # Check if driver is alive
+            if driver is None:
+                print("🔄 Recreating browser session...")
+                driver = create_driver()
+
+            try:
+                success = run_cycle(driver)
+            except Exception as e:
+                print(f"❌ Critical error in cycle: {e}")
+                # If it looks like a driver crash, kill it so we recreate next time
+                if "invalid session id" in str(e).lower() or "disconnected" in str(e).lower():
+                     print("💥 Browser session died. Will recreate next cycle.")
+                     try:
+                         driver.quit()
+                     except:
+                         pass
+                     driver = None
+                success = False
             
             if not success:
                 print("⚠ Cycle had issues. Will retry after wait.")
             
-            print(f"\n⏳ Waiting {wait_minutes} minutes before next cycle...")
+            print(f"\n time is {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            print(f"⏳ Waiting {wait_minutes} minutes before next cycle...")
             import time
             time.sleep(wait_minutes * 60)
             
             # Navigate back to start for next cycle
-            print("🔄 Reloading for next cycle...")
-            driver.get(DMV_URL)
-            random_delay(3, 5)
+            if driver:
+                print("🔄 Reloading for next cycle...")
+                try:
+                    driver.get(DMV_URL)
+                    random_delay(3, 5)
+                except Exception as e:
+                     print(f"⚠ Could not reload page ({e}). Killing driver to recreate next cycle.")
+                     try: 
+                         driver.quit()
+                     except: 
+                         pass
+                     driver = None
             
     except KeyboardInterrupt:
         print("\n\n🛑 Stopped by user (Ctrl+C)")

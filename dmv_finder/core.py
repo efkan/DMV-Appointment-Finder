@@ -5,9 +5,16 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
+from dmv_finder.config import HEADLESS_MODE
+
 def create_driver() -> webdriver.Chrome:
     """Create a simple Chrome WebDriver instance."""
     options = Options()
+    
+    if HEADLESS_MODE:
+        options.add_argument("--headless=new") # Modern headless mode
+        options.add_argument("--window-size=1920,1080")
+        
     options.add_argument("--start-maximized")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])

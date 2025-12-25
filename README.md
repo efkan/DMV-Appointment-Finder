@@ -74,6 +74,16 @@ python3 main.py
 - After checking all zip codes, it will **wait for 10 minutes** and then start again automatically.
 - It will keep running until you stop it.
 
+### Running in Background (Headless Mode)
+
+By default, the app runs in **Headless Mode** (no visible browser) to run quietly in the background.
+
+If you want to **see the browser** (to debug or watch it working):
+
+1. Open `dmv_finder/config.py`.
+2. Change the line `HEADLESS_MODE = True` to `HEADLESS_MODE = False`.
+3. Save and run the app again.
+
 ### How to Stop
 
 To stop the app, click in the terminal window and press `Ctrl+C` on your keyboard.
