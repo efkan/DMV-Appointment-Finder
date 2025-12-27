@@ -12,7 +12,7 @@ NTFY_TOPIC = "pinars_dmv_appointments"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 # Browser Config
-HEADLESS_MODE = True  # Set to True to run without a visible browser window
+HEADLESS_MODE = False  # Set to True to run without visible browser (NOTE: DMV site may not work properly in headless mode)
 
 # Selectors
 SELECTORS = {

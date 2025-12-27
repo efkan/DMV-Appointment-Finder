@@ -139,11 +139,8 @@ def run_cycle(driver):
             # Epic-6: Go back for next zip code (unless last one)
             if i < len(zip_codes_to_process) - 1:
                 if not click_back_reset(driver):
-                    print("⚠ Could not go back, attempting to continue...")
-                    driver.get(DMV_URL)
-                    random_delay(3, 5)
-                    perform_login(driver, params)
-                    verify_office_page(driver)
+                    print("⚠ Could not go back. Skipping remaining zip codes this cycle.")
+                    break  # Exit the zip code loop, will recycle and retry next cycle
         
         # Epic-6: Send notification if better date found
         if better_date_found and best_date and best_zip:
@@ -182,7 +179,7 @@ def main():
     
     driver = create_driver()
     cycle_count = 0
-    wait_minutes = 4
+    wait_minutes = 6
     
     try:
         while True:

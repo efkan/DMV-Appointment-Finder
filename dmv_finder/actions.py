@@ -139,6 +139,13 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
     """
     print("📅 Reading calendar...")
     
+    # CRITICAL: Verify we're on the calendar page before attempting to parse
+    current_url = driver.current_url
+    if "appointments/select-date" not in current_url:
+        print(f"  ❌ ERROR: Not on calendar page! Current URL: {current_url}")
+        print(f"  Expected URL to contain: 'appointments/select-date'")
+        return None
+    
     try:
         wait = WebDriverWait(driver, 5) # Short wait
         
@@ -146,7 +153,10 @@ def parse_calendar_date(driver: webdriver.Chrome) -> Optional[str]:
         try:
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rbc-row-segment")))
         except TimeoutException:
-            print("  ⚠ No calendar rows found (timeout).")
+            print("  ⚠ No calendar rows found (timeout). Saving HTML for debug...")
+            with open("debug_page_source.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            print("  📂 Full page HTML saved to 'debug_page_source.html'")
             return None
 
         # 2. Find all row segments
